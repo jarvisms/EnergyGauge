@@ -38,10 +38,6 @@ svg {
 <div id="Gauge1" style="width:75%"></div>
 
 <script>
-function extend(obj, more) {
-  Object.keys(more).forEach(function(key) { obj[key] = more[key]; });
-  return obj;
-}
 function setAttributes(el, attrs) {
   for(var key in attrs) {el.setAttribute(key, attrs[key]);}
 }
@@ -65,22 +61,27 @@ function removeElement(element) {
     element.parentNode.removeChild(element);
 }
 
-function Draw(obj){
-  obj.units = " KW";
-  obj.startLabel = "Random Data";
-  obj.startTitle = "Loading...";
-  obj.title = "Random Elec"
+function Draw(newobj){
+  obj = {}; // Empty object/dictionary. properties added below to avoid excessive quotation marks
+  obj.title = "Title";
+  obj.units = "";
+  obj.decimals = 2;    // Number of decimal places
+  obj.startLabel = "Loading...";
+  obj.startTitle = "";
   obj.starthue = 120;  // Green at 0%
-  obj.endhue = 0; // Red at 100%
-  obj.sat = 100;  // Saturation
-  obj.lum = 50;   // Luminance
+  obj.endhue = 0;      // Red at 100%
+  obj.startsat = 100;  // Saturation at 0%
+  obj.endsat = 100;    // Saturation at 0%
+  obj.startlum = 50;   // Luminance at 100%
+  obj.endlum = 50;     // Luminance at 100%
+  obj = {...obj, ...newobj};  // Spread operator used to merge newobj on top of obj and return the merged result
   obj.svg = addElement(obj.div, "svg", {"viewBox":"0 0 205 105","preserveAspectRatio":"xMidYMid meet"}, null, "http://www.w3.org/2000/svg");
   
   var h = obj.svg.viewBox.baseVal.height-5;
   var w = obj.svg.viewBox.baseVal.width-5;
   var s =  w/10;
-  var strokecolour = "hsla("+obj.starthue+","+obj.sat+"%,"+obj.lum+"%,1)";    // Line Colour at 0%
-  var facecolour = "hsla("+obj.starthue+","+obj.sat+"%,"+obj.lum+"%,0.25)";   // Face Colour at 0%
+  var strokecolour = "hsla("+obj.starthue+","+obj.startsat+"%,"+obj.startlum+"%,1)";    // Line Colour at 0%
+  var facecolour = "hsla("+obj.starthue+","+obj.startsat+"%,"+obj.startlum+"%,0.25)";   // Face Colour at 0%
   var arcd = ["M",s/2,h,"a",(w/2)-s,h-s,0,0,1,w-s,0];
   
   var defs = addElement(obj.svg, "defs");
@@ -93,21 +94,21 @@ function Draw(obj){
   obj.gaugeFace = addElement(obj.svg, "path", {"id":"gaugeFace", "filter":"url(#shadow)", "d":arcd.join(" ")});
   var totlen = obj.gaugeFace.getTotalLength();
   setProperties(obj.gaugeFace.style,{
-    "fill": "hsla("+obj.starthue+","+obj.sat+"%,"+obj.lum+"%,0)",// Fade in from nothing, alpha=0
-    "stroke": "hsla("+obj.starthue+","+obj.sat+"%,"+obj.lum+"%,0)",// Fade in from nothing, alpha=0
+    "fill": "hsla("+obj.starthue+","+obj.startsat+"%,"+obj.startlum+"%,0)",// Fade in from nothing, alpha=0
+    "stroke": "hsla("+obj.starthue+","+obj.startsat+"%,"+obj.startlum+"%,0)",// Fade in from nothing, alpha=0
     "stroke-width": s,
     "stroke-dasharray": totlen,
     "stroke-dashoffset": totlen,
   });
   
   var animAttr = {"attributeType":"XML", "dur":"1s", "fill":"freeze", "calcMode":"spline", "keyTimes":"0;1", "keySplines":"0.5 0 0.5 1"};
-  obj.lineLengthAnim = addElement(obj.gaugeFace, "animate", extend({"id":"lineLengthAnim", "attributeName":"stroke-dashoffset", "from": totlen, "to": totlen},animAttr))
-  obj.lineColourAnim = addElement(obj.gaugeFace, "animate", extend({"id":"lineColourAnim", "attributeName":"stroke", "begin":"lineLengthAnim.begin", "from": obj.gaugeFace.style.stroke, "to": strokecolour},animAttr))
-  obj.faceColourAnim = addElement(obj.gaugeFace, "animate", extend({"id":"faceColourAnim", "attributeName":"fill", "begin":"lineLengthAnim.begin", "from": obj.gaugeFace.style.fill, "to": facecolour},animAttr))
+  obj.lineLengthAnim = addElement(obj.gaugeFace, "animate", {...{"id":"lineLengthAnim", "attributeName":"stroke-dashoffset", "from": totlen, "to": totlen},...animAttr})
+  obj.lineColourAnim = addElement(obj.gaugeFace, "animate", {...{"id":"lineColourAnim", "attributeName":"stroke", "begin":"lineLengthAnim.begin", "from": obj.gaugeFace.style.stroke, "to": strokecolour},...animAttr})
+  obj.faceColourAnim = addElement(obj.gaugeFace, "animate", {...{"id":"faceColourAnim", "attributeName":"fill", "begin":"lineLengthAnim.begin", "from": obj.gaugeFace.style.fill, "to": facecolour},...animAttr})
   
   var title = addElement(obj.svg, "text", {"id":"title", "filter":"url(#shadow)", "opacity":0, "text-anchor":"middle", "x":"100", "y":"95", "fill":"black", "font-family":"Lato,'Lucida Console', Monaco, monospace", "font-size":"16px"});
   //title.textContent = obj.startTitle;
-  var titleAnim = addElement(title, "animate", extend({"id":"titleAnim", "attributeName":"opacity", "begin":"lineLengthAnim.begin", "from": 0, "to": 1},animAttr))
+  var titleAnim = addElement(title, "animate", {...{"id":"titleAnim", "attributeName":"opacity", "begin":"lineLengthAnim.begin", "from": 0, "to": 1},...animAttr})
   title.appendChild(document.createTextNode(obj.startTitle))
   titleAnim.onend = function() {
     title.setAttribute("opacity",1);  // Keep it permanent
@@ -117,7 +118,7 @@ function Draw(obj){
   
   obj.label = addElement(obj.svg, "text", {"id":"label", "filter":"url(#shadow)", "opacity":0, "text-anchor":"middle", "x":"100", "y":"66", "fill":"black", "font-family":"Lato,'Lucida Console', Monaco, monospace", "font-size":"20px"});
   //obj.label.textContent = obj.startLabel;
-  var labelAnim = addElement(obj.label, "animate", extend({"id":"labelAnim", "attributeName":"opacity", "begin":"lineLengthAnim.begin", "from": 0, "to": 1},animAttr))
+  var labelAnim = addElement(obj.label, "animate", {...{"id":"labelAnim", "attributeName":"opacity", "begin":"lineLengthAnim.begin", "from": 0, "to": 1},...animAttr})
   obj.label.appendChild(document.createTextNode(obj.startLabel))
   labelAnim.onend = function () {
     obj.label.setAttribute("opacity",1);  // Keep it permanent
@@ -136,23 +137,29 @@ function Update(obj,rawval,max) {
   else if (percent > 100) percent = 100;
   var offset = obj.gaugeFace.getTotalLength() * (1-percent);
   var newhue = obj.starthue - (obj.starthue-obj.endhue) * percent;
+  var newsat = obj.startsat - (obj.startsat-obj.endsat) * percent;
+  var newlum = obj.startlum - (obj.startlum-obj.endlum) * percent;
   setAttributes(obj.lineLengthAnim,{
     "from": obj.lineLengthAnim.getAttribute("to"),
     "to": offset,
   });
   setAttributes(obj.lineColourAnim,{
     "from": obj.lineColourAnim.getAttribute("to"),
-    "to": "hsla("+newhue+","+obj.sat+"%,"+obj.lum+"%,1)",
+    "to": "hsla("+newhue+","+newsat+"%,"+newlum+"%,1)",
   });
   setAttributes(obj.faceColourAnim,{
     "from": obj.faceColourAnim.getAttribute("to"),
-    "to": "hsla("+newhue+","+obj.sat+"%,"+obj.lum+"%,0.25)",
+    "to": "hsla("+newhue+","+newsat+"%,"+newlum+"%,0.25)",
   });
-  obj.label.textContent = rawval.toFixed(2)+obj.units
+  obj.label.textContent = rawval.toFixed(obj.decimals)+obj.units
   obj.lineLengthAnim.beginElement();
 }
 
-const Gauge1 = {"div":document.getElementById("Gauge1")};
+const Gauge1 = {
+  "div":document.getElementById("Gauge1"),
+  "title":"Random Elec",
+  "units":" KW",
+};
 Draw(Gauge1);
 </script>
 
