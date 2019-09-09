@@ -21,6 +21,7 @@ html {
   height: 100%;
   margin: 0px auto;
   background-image: url('Background.jpg');
+  background-size: 100%;
   font-family: Verdana, Geneva, sans-serif;
   font-size: 12px;
   color: #ccc;
@@ -41,10 +42,10 @@ html {
 <script>
 function setAttributes(el, attrs) {
   for(var key in attrs) {el.setAttribute(key, attrs[key]);}
-}
+};
 function setProperties(el, props) {
   for(var key in props) {el[key] = props[key];}
-}
+};
 function addElement(parent, elementTag, attrs, props, NS) {
     // Adds an element to the parent object in the document, adds
     // the given attributes and properties and returns the object
@@ -56,11 +57,11 @@ function addElement(parent, elementTag, attrs, props, NS) {
     if (props && typeof props === 'object' && props.constructor === Object) setProperties(newElement, props);
     parent.appendChild(newElement);
     return newElement
-}
+};
 function removeElement(element) {
     // Removes an element from the document
     element.parentNode.removeChild(element);
-}
+};
 
 function Draw(newobj){
   let obj = {}; // Empty object/dictionary. properties added below to avoid excessive quotation marks
@@ -79,6 +80,33 @@ function Draw(newobj){
   obj.endalpha = 1;    // Transparency at 100%
   obj = {...obj, ...newobj};  // Spread operator used to merge newobj on top of obj and return the merged result
   obj.svg = addElement(obj.div, "svg", {"viewBox":"0 0 205 105","preserveAspectRatio":"xMidYMid meet"}, null, "http://www.w3.org/2000/svg");
+  
+  obj.Update = function (rawval,max) {
+    rawval = parseFloat(rawval);
+    var percent = rawval / max;
+    // Keep the percentages within limits
+    if (percent < 0) percent = 0;
+    else if (percent > 100) percent = 100;
+    var offset = obj.gaugeFace.getTotalLength() * (1-percent);
+    var newhue = obj.starthue - (obj.starthue-obj.endhue) * percent;
+    var newsat = obj.startsat - (obj.startsat-obj.endsat) * percent;
+    var newlum = obj.startlum - (obj.startlum-obj.endlum) * percent;
+    var newalpha = obj.startalpha - (obj.startalpha-obj.endalpha) * percent;
+    setAttributes(obj.lineLengthAnim,{
+      "from": obj.lineLengthAnim.getAttribute("to"),
+      "to": offset,
+    });
+    setAttributes(obj.lineColourAnim,{
+      "from": obj.lineColourAnim.getAttribute("to"),
+      "to": "hsla("+newhue+","+newsat+"%,"+newlum+"%,"+newalpha+")",
+    });
+    setAttributes(obj.faceColourAnim,{
+      "from": obj.faceColourAnim.getAttribute("to"),
+      "to": "hsla("+newhue+","+newsat+"%,"+newlum+"%,"+0.33*newalpha+")",
+    });
+    obj.label.textContent = rawval.toFixed(obj.decimals)+obj.units
+    obj.lineLengthAnim.beginElement();
+  };
   
   var h = obj.svg.viewBox.baseVal.height-5;
   var w = obj.svg.viewBox.baseVal.width-5;
@@ -109,7 +137,7 @@ function Draw(newobj){
   obj.lineColourAnim = addElement(obj.gaugeFace, "animate", {...{"id":"lineColourAnim", "attributeName":"stroke", "begin":"lineLengthAnim.begin", "from": obj.gaugeFace.style.stroke, "to": strokecolour},...animAttr})
   obj.faceColourAnim = addElement(obj.gaugeFace, "animate", {...{"id":"faceColourAnim", "attributeName":"fill", "begin":"lineLengthAnim.begin", "from": obj.gaugeFace.style.fill, "to": facecolour},...animAttr})
   
-  var title = addElement(obj.svg, "text", {"id":"title", "filter":"url(#shadow)", "opacity":0, "text-anchor":"middle", "x":"100", "y":"95", "fill":"black", "stroke-width":"0.25", "stroke":"Grey", "font-family":"Lato,'Lucida Console', Monaco, monospace", "font-size":"16px"});
+  var title = addElement(obj.svg, "text", {"id":"title", "filter":"url(#shadow)", "opacity":0, "text-anchor":"middle", "x":"100", "y":"95", "fill":"darkgrey", "stroke-width":"0.25", "stroke":"black", "font-family":"Lato,'Lucida Console', Monaco, monospace", "font-size":"16px"});
   //title.textContent = obj.startTitle;
   var titleAnim = addElement(title, "animate", {...{"id":"titleAnim", "attributeName":"opacity", "begin":"lineLengthAnim.begin", "from": 0, "to": 1},...animAttr})
   title.appendChild(document.createTextNode(obj.startTitle))
@@ -117,9 +145,9 @@ function Draw(newobj){
     title.setAttribute("opacity",1);  // Keep it permanent
     this.parentNode.removeChild(this);
     title.textContent = obj.title;
-  }
+  };
   
-  obj.label = addElement(obj.svg, "text", {"id":"label", "filter":"url(#shadow)", "opacity":0, "text-anchor":"middle", "x":"100", "y":"66", "fill":"black", "stroke-width":"0.25", "stroke":"Grey", "font-family":"Lato,'Lucida Console', Monaco, monospace", "font-size":"20px"});
+  obj.label = addElement(obj.svg, "text", {"id":"label", "filter":"url(#shadow)", "opacity":0, "text-anchor":"middle", "x":"100", "y":"66", "fill":"darkgrey", "stroke-width":"0.25", "stroke":"black", "font-family":"Lato,'Lucida Console', Monaco, monospace", "font-size":"20px"});
   //obj.label.textContent = obj.startLabel;
   var labelAnim = addElement(obj.label, "animate", {...{"id":"labelAnim", "attributeName":"opacity", "begin":"lineLengthAnim.begin", "from": 0, "to": 1},...animAttr})
   obj.label.appendChild(document.createTextNode(obj.startLabel))
@@ -127,42 +155,17 @@ function Draw(newobj){
     obj.label.setAttribute("opacity",1);  // Keep it permanent
     this.parentNode.removeChild(this);
     obj.label.textContent = "-.--"+obj.units;
-  }
-  obj.lineLengthAnim.onend = () => Update(obj,Math.random()*50.0,50.0);
+  };
+  obj.lineLengthAnim.onend = () => obj.Update(Math.random()*50.0,50.0);
   obj.lineLengthAnim.beginElement();
   return obj
-}
-
-function Update(obj,rawval,max) {
-  rawval = parseFloat(rawval);
-  var percent = rawval / max;
-  // Keep the percentages within limits
-  if (percent < 0) percent = 0;
-  else if (percent > 100) percent = 100;
-  var offset = obj.gaugeFace.getTotalLength() * (1-percent);
-  var newhue = obj.starthue - (obj.starthue-obj.endhue) * percent;
-  var newsat = obj.startsat - (obj.startsat-obj.endsat) * percent;
-  var newlum = obj.startlum - (obj.startlum-obj.endlum) * percent;
-  var newalpha = obj.startalpha - (obj.startalpha-obj.endalpha) * percent;
-  setAttributes(obj.lineLengthAnim,{
-    "from": obj.lineLengthAnim.getAttribute("to"),
-    "to": offset,
-  });
-  setAttributes(obj.lineColourAnim,{
-    "from": obj.lineColourAnim.getAttribute("to"),
-    "to": "hsla("+newhue+","+newsat+"%,"+newlum+"%,"+newalpha+")",
-  });
-  setAttributes(obj.faceColourAnim,{
-    "from": obj.faceColourAnim.getAttribute("to"),
-    "to": "hsla("+newhue+","+newsat+"%,"+newlum+"%,"+0.33*newalpha+")",
-  });
-  obj.label.textContent = rawval.toFixed(obj.decimals)+obj.units
-  obj.lineLengthAnim.beginElement();
-}
+};
+</script>
+<script>
 function StartUp() {
     Gauge1 = {
       "div":document.getElementById("Gauge1"),
-      "title":"Power Demand (Live)",
+      "title":"Grid Power (Live)",
       "units":" KW",
     };
     Gauge2 = {
