@@ -28,11 +28,11 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
-  //overflow: hidden;
+  /*overflow: hidden;*/
 }
-//svg {
-//  border: 1px solid black;
-//}
+/*svg {
+  border: 1px solid black;
+} */
 #Gauge1, #Gauge2 {
     width:50%;
     position:absolute;
@@ -141,22 +141,22 @@ function Draw(newobj){
   //title.textContent = obj.startTitle;
   var titleAnim = addElement(title, "animate", {...{"id":"titleAnim", "attributeName":"opacity", "begin":"lineLengthAnim.begin", "from": 0, "to": 1},...animAttr})
   title.appendChild(document.createTextNode(obj.startTitle))
-  titleAnim.onend = function() {
+  titleAnim.addEventListener('endEvent', () => {
     title.setAttribute("opacity",1);  // Keep it permanent
     this.parentNode.removeChild(this);
     title.textContent = obj.title;
-  };
+  });
   
   obj.label = addElement(obj.svg, "text", {"id":"label", "filter":"url(#shadow)", "opacity":0, "text-anchor":"middle", "x":"100", "y":"66", "fill":"darkgrey", "stroke-width":"0.25", "stroke":"black", "font-family":"Lato,'Lucida Console', Monaco, monospace", "font-size":"20px"});
   //obj.label.textContent = obj.startLabel;
   var labelAnim = addElement(obj.label, "animate", {...{"id":"labelAnim", "attributeName":"opacity", "begin":"lineLengthAnim.begin", "from": 0, "to": 1},...animAttr})
   obj.label.appendChild(document.createTextNode(obj.startLabel))
-  labelAnim.onend = function () {
+  labelAnim.addEventListener('endEvent', () => {
     obj.label.setAttribute("opacity",1);  // Keep it permanent
     this.parentNode.removeChild(this);
     obj.label.textContent = "-.--"+obj.units;
-  };
-  obj.lineLengthAnim.onend = () => obj.Update(Math.random()*50.0,50.0);
+  });
+  obj.lineLengthAnim.addEventListener('endEvent', () => obj.Update(Math.random()*50.0,50.0));
   obj.lineLengthAnim.beginElement();
   return obj
 };
